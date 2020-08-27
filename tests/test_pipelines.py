@@ -5,7 +5,6 @@ from transformers import pipeline
 from transformers.pipelines import SUPPORTED_TASKS, Conversation, DefaultArgumentHandler, Pipeline
 from transformers.testing_utils import require_tf, require_torch, slow, torch_device
 
-
 DEFAULT_DEVICE_NUM = -1 if torch_device == "cpu" else 0
 VALID_INPUTS = ["A simple string", ["list of strings"]]
 
@@ -135,14 +134,14 @@ class DefaultArgumentHandlerTestCase(unittest.TestCase):
 
 class MonoColumnInputTestCase(unittest.TestCase):
     def _test_mono_column_pipeline(
-        self,
-        nlp: Pipeline,
-        valid_inputs: List,
-        output_keys: Iterable[str],
-        invalid_inputs: List = [None],
-        expected_multi_result: Optional[List] = None,
-        expected_check_keys: Optional[List[str]] = None,
-        **kwargs,
+            self,
+            nlp: Pipeline,
+            valid_inputs: List,
+            output_keys: Iterable[str],
+            invalid_inputs: List = [None],
+            expected_multi_result: Optional[List] = None,
+            expected_check_keys: Optional[List[str]] = None,
+            **kwargs,
     ):
         self.assertIsNotNone(nlp)
 
@@ -673,6 +672,14 @@ class QAPipelineTests(unittest.TestCase):
             nlp = pipeline(task="question-answering", model=model_name, tokenizer=model_name)
             self._test_qa_pipeline(nlp)
 
+        # Uncomment when onnx model available
+        # model_name = "deepset/bert-base-cased-squad2"
+        # use_onnx = True
+        # onnx_path = "/Users/binoydalal/Downloads/bert-base-cased-squad2-optimized-quantized.onnx"
+        # nlp = pipeline(task="question-answering", model=model_name, tokenizer=model_name, use_onnx=use_onnx,
+        #                onnx_path=onnx_path)
+        # self._test_qa_pipeline(nlp)
+
     @require_tf
     def test_tf_question_answering(self):
         for model_name in QA_FINETUNED_MODELS:
@@ -682,9 +689,9 @@ class QAPipelineTests(unittest.TestCase):
 
 class NerPipelineTests(unittest.TestCase):
     def _test_ner_pipeline(
-        self,
-        nlp: Pipeline,
-        output_keys: Iterable[str],
+            self,
+            nlp: Pipeline,
+            output_keys: Iterable[str],
     ):
 
         ungrouped_ner_inputs = [

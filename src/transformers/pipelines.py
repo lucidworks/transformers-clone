@@ -23,6 +23,7 @@ import uuid
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from itertools import chain
+from multiprocessing import cpu_count
 from os.path import abspath, exists
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 from uuid import UUID
@@ -512,6 +513,8 @@ class Pipeline(_ScikitCompat):
         args_parser: ArgumentHandler = None,
         device: int = -1,
         binary_output: bool = False,
+        use_onnx: bool = False,
+        onnx_path: Optional[str] = None,
     ):
 
         if framework is None:
@@ -523,6 +526,8 @@ class Pipeline(_ScikitCompat):
         self.modelcard = modelcard
         self.framework = framework
         self.device = device if framework == "tf" else torch.device("cpu" if device < 0 else "cuda:{}".format(device))
+        self.use_onnx = use_onnx
+        self.onnx_path = onnx_path
         self.binary_output = binary_output
         self._args_parser = args_parser or DefaultArgumentHandler()
 
@@ -1585,6 +1590,26 @@ class QuestionAnsweringPipeline(Pipeline):
             TF_MODEL_FOR_QUESTION_ANSWERING_MAPPING if self.framework == "tf" else MODEL_FOR_QUESTION_ANSWERING_MAPPING
         )
 
+        if self.use_onnx:
+            # Do onnx loading here
+            # Set env variables if not set - optional: make it configurable
+            os.environ.setdefault("OMP_NUM_THREADS", str(cpu_count()))
+            os.environ.setdefault("OMP_WAIT_POLICY", "ACTIVE")
+            # Import onnxrumtime objects
+            from onnxruntime import InferenceSession, SessionOptions, ExecutionMode, GraphOptimizationLevel
+            # Setup ONNX config params
+            onnx_exec_mode = kwargs.pop("onnx_exec_mode", ExecutionMode.ORT_SEQUENTIAL)
+            onnx_inter_op_num_threads = kwargs.pop("onnx_inter_op_num_threads", 1)
+            onnx_graph_optimization_level = kwargs.pop("onnx_graph_optimization_level", GraphOptimizationLevel.ORT_ENABLE_ALL)
+            onnx_exec_providers = kwargs.pop("onnx_exec_providers", ["CPUExecutionProvider"])
+            # Configure options
+            options = SessionOptions()
+            options.execution_mode = onnx_exec_mode
+            options.inter_op_num_threads = onnx_inter_op_num_threads
+            options.graph_optimization_level = onnx_graph_optimization_level
+            # Load model
+            self.model = InferenceSession(self.onnx_path, options, providers=onnx_exec_providers)
+
     @staticmethod
     def create_sample(
         question: Union[str, List[str]], context: Union[str, List[str]]
@@ -1687,16 +1712,19 @@ class QuestionAnsweringPipeline(Pipeline):
 
             # Manage tensor allocation on correct device
             with self.device_placement():
-                if self.framework == "tf":
-                    fw_args = {k: tf.constant(v) for (k, v) in fw_args.items()}
-                    start, end = self.model(fw_args)[:2]
-                    start, end = start.numpy(), end.numpy()
+                if not self.use_onnx:
+                    if self.framework == "tf":
+                        fw_args = {k: tf.constant(v) for (k, v) in fw_args.items()}
+                        start, end = self.model(fw_args)[:2]
+                        start, end = start.numpy(), end.numpy()
+                    else:
+                        with torch.no_grad():
+                            # Retrieve the score for the context tokens only (removing question tokens)
+                            fw_args = {k: torch.tensor(v, device=self.device) for (k, v) in fw_args.items()}
+                            start, end = self.model(**fw_args)[:2]
+                            start, end = start.cpu().numpy(), end.cpu().numpy()
                 else:
-                    with torch.no_grad():
-                        # Retrieve the score for the context tokens only (removing question tokens)
-                        fw_args = {k: torch.tensor(v, device=self.device) for (k, v) in fw_args.items()}
-                        start, end = self.model(**fw_args)[:2]
-                        start, end = start.cpu().numpy(), end.cpu().numpy()
+                    start, end = self.model.run(None, fw_args)[:2]
 
             min_null_score = 1000000  # large and positive
             answers = []
