@@ -673,6 +673,14 @@ class QAPipelineTests(unittest.TestCase):
             nlp = pipeline(task="question-answering", model=model_name, tokenizer=model_name)
             self._test_qa_pipeline(nlp)
 
+        # Uncomment when onnx model available
+        # model_name = "deepset/bert-base-cased-squad2"
+        # use_onnx = True
+        # onnx_path = "/Users/binoydalal/Downloads/bert-base-cased-squad2-optimized-quantized.onnx"
+        # nlp = pipeline(task="question-answering", model=model_name, tokenizer=model_name, use_onnx=use_onnx,
+        #                onnx_path=onnx_path)
+        # self._test_qa_pipeline(nlp)
+
     @require_tf
     def test_tf_question_answering(self):
         for model_name in QA_FINETUNED_MODELS:
