@@ -5,6 +5,7 @@ from transformers import pipeline
 from transformers.pipelines import SUPPORTED_TASKS, Conversation, DefaultArgumentHandler, Pipeline
 from transformers.testing_utils import require_tf, require_torch, slow, torch_device
 
+
 DEFAULT_DEVICE_NUM = -1 if torch_device == "cpu" else 0
 VALID_INPUTS = ["A simple string", ["list of strings"]]
 
@@ -134,14 +135,14 @@ class DefaultArgumentHandlerTestCase(unittest.TestCase):
 
 class MonoColumnInputTestCase(unittest.TestCase):
     def _test_mono_column_pipeline(
-            self,
-            nlp: Pipeline,
-            valid_inputs: List,
-            output_keys: Iterable[str],
-            invalid_inputs: List = [None],
-            expected_multi_result: Optional[List] = None,
-            expected_check_keys: Optional[List[str]] = None,
-            **kwargs,
+        self,
+        nlp: Pipeline,
+        valid_inputs: List,
+        output_keys: Iterable[str],
+        invalid_inputs: List = [None],
+        expected_multi_result: Optional[List] = None,
+        expected_check_keys: Optional[List[str]] = None,
+        **kwargs,
     ):
         self.assertIsNotNone(nlp)
 
@@ -689,9 +690,9 @@ class QAPipelineTests(unittest.TestCase):
 
 class NerPipelineTests(unittest.TestCase):
     def _test_ner_pipeline(
-            self,
-            nlp: Pipeline,
-            output_keys: Iterable[str],
+        self,
+        nlp: Pipeline,
+        output_keys: Iterable[str],
     ):
 
         ungrouped_ner_inputs = [

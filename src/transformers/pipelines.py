@@ -1596,11 +1596,14 @@ class QuestionAnsweringPipeline(Pipeline):
             os.environ.setdefault("OMP_NUM_THREADS", str(cpu_count()))
             os.environ.setdefault("OMP_WAIT_POLICY", "ACTIVE")
             # Import onnxrumtime objects
-            from onnxruntime import InferenceSession, SessionOptions, ExecutionMode, GraphOptimizationLevel
+            from onnxruntime import ExecutionMode, GraphOptimizationLevel, InferenceSession, SessionOptions
+
             # Setup ONNX config params
             onnx_exec_mode = kwargs.pop("onnx_exec_mode", ExecutionMode.ORT_SEQUENTIAL)
             onnx_inter_op_num_threads = kwargs.pop("onnx_inter_op_num_threads", 1)
-            onnx_graph_optimization_level = kwargs.pop("onnx_graph_optimization_level", GraphOptimizationLevel.ORT_ENABLE_ALL)
+            onnx_graph_optimization_level = kwargs.pop(
+                "onnx_graph_optimization_level", GraphOptimizationLevel.ORT_ENABLE_ALL
+            )
             onnx_exec_providers = kwargs.pop("onnx_exec_providers", ["CPUExecutionProvider"])
             # Configure options
             options = SessionOptions()
