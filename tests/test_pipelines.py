@@ -672,6 +672,8 @@ class QAPipelineTests(unittest.TestCase):
         for model_name in QA_FINETUNED_MODELS:
             nlp = pipeline(task="question-answering", model=model_name, tokenizer=model_name)
             self._test_qa_pipeline(nlp)
+            nlp = pipeline(task="question-answering", model=model_name, tokenizer=(model_name, {"use_fast": True}))
+            self._test_qa_pipeline(nlp)
 
         # Uncomment when onnx model available
         # model_name = "deepset/bert-base-cased-squad2"
@@ -685,6 +687,8 @@ class QAPipelineTests(unittest.TestCase):
     def test_tf_question_answering(self):
         for model_name in QA_FINETUNED_MODELS:
             nlp = pipeline(task="question-answering", model=model_name, tokenizer=model_name, framework="tf")
+            self._test_qa_pipeline(nlp)
+            nlp = pipeline(task="question-answering", model=model_name, tokenizer=(model_name, {"use_fast": True}))
             self._test_qa_pipeline(nlp)
 
 
